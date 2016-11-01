@@ -9,6 +9,7 @@ library("kernlab")
 library("party")
 library("h2o")
 library("adabag")
+library("plotly")
 
 sift <- fread("./Fall2016-proj3-grp10-master/data/sift_features.csv")
 sift2 <- sift
@@ -19,11 +20,10 @@ sift <- as.matrix(sift)
 sift <- t(sift)
 colnames(sift) <- paste("feature",c(1:5000))
 sift <- data.frame(sift)
-#sift$class <- ifelse(grepl("chicken",rownames(sift)),1,0)
-shift$class <- c(rep.int(0,1000),rep.int(1,1000))
+sift$class <- ifelse(grepl("chicken",rownames(sift)),1,0)
 sift$class <- factor(sift$class,labels = c("chicken","dog"))
 
-this <- colSums(subset(sift[-t_x,],select = -class))
+this <- colSums(subset(sift,select = -class))
 while(min(this) < 0.0001){
   print("here")
   that <- as.integer(which.min(this))
@@ -35,50 +35,57 @@ while(min(this) < 0.0001){
 #dividing training and test sample
 t_x <- sample(nrow(sift),nrow(sift)*0.15)
 X_dataset <- sift[-t_x,]
+X_test_dataset <- sift[t_x,]
 X_train <- subset(sift[-t_x,], select= -class )
 X_test <- subset(sift[t_x,],select = -class)
 Y_train <- sift$class[-t_x]
 Y_test <- sift$class[t_x]
 
-#svm_poly...accuracy rate 50.3%
+#svm_poly...accuracy rate 47.667%
 model_svm_poly <- svm(class~., data = X_dataset,method = "C-classification", kernel = "polynomial", cost = 0.1, gamma = 0.1)
 pred_svm_poly <- predict(model_svm_poly, X_test)
 sum(pred_svm_poly==Y_test)/length(Y_test)
 
-#svm_line...accuracy rate 68.667%
+#svm_line...accuracy rate 68%
 model_svm_line <- svm(class~., data = X_dataset,method = "C-classification", kernel = "linear", cost = 0.1, gamma = 0.1)
 pred_svm_line <- predict(model_svm_line, X_test)
 sum(pred_svm_line==Y_test)/length(Y_test)
 
-#kernlab_poly...accuracy rate 68.667%
+#kernlab_poly...accuracy rate 68%
 model_kern_poly <- ksvm(class~., data = X_dataset,type = "C-svc",kernel = "polydot")
 pred_kern_poly <- predict(model_kern_poly, X_test)
 sum(pred_kern_poly==Y_test)/length(Y_test)
 
-#kernlab_poly...accuracy rate 68.667%
+#kernlab_poly...accuracy rate 68%
 model_kern_line <- ksvm(class~., data = X_dataset,type = "C-svc",kernel = "vanilladot")
 pred_kern_line <- predict(model_kern_line, X_test)
 sum(pred_kern_line==Y_test)/length(Y_test)
 
-#tree...accuracy rate 58%
+#tree...accuracy rate 61.3%
 model_tree <- ctree(class ~ ., data = X_dataset)
-pred_tree <- predict(model_gml,X_test)
-sum(pred_gml==Y_test)/length(Y_test)
+pred_tree <- predict(model_tree,X_test)
+sum(pred_tree==Y_test)/length(Y_test)
 
 #glm...does not converge
 model_gml <- glm(formula = class~. ,family = binomial(link = "logit"),data = X_dataset)
 #pred_gml <- predict(model_gml,X_test)
 #sum(pred_gml==Y_test)/length(Y_test)
 
-#adaboost...running overnight for results
-test <- 0
-for(i in 1:20){
-  model_adaboost <- boosting(formula = class~.,data= X_dataset , boos=TRUE, mfinal=i)
-  pred_adaboost <- predict(model_adaboost,X_test)
-  test <- c(test,(sum(pred_adaboost==Y_test)/length(Y_test)))
-  print(paste("run: ",i))
-  print(paste("test: ",test))
-}
+#adaboost 74%
+model_adaboost <- boosting(formula = class~.,data= X_dataset , boos=TRUE)
+pred_adaboost <- predict(model_adaboost,X_test)
+sum(pred_adaboost$class==Y_test)/length(Y_test)
+
+model_adaboost$importance
+error_adaboost <- errorevol(model_adaboost,X_test_dataset)
+x<-c(1:100)
+ada_table <- rbind(x,error_adaboost$error)
+ada_table <- t(ada_table)
+ada_table <- as.data.frame(ada_table)
+colnames(ada_table) <- c("iteration","error_rate")
+plot(x=ada_table$iteration,y=ada_table$error_rate)
+
+
 
 
 
@@ -101,3 +108,4 @@ nrow(sift.train) + nrow(sift.test)
 h2o.gbm(y = dependent, x = independent, data = australia.hex, n.trees
         = 15, interaction.depth = 5,
         n.minobsinnode = 2, shrinkage = 0.01, distribution= "multinomial")
+
