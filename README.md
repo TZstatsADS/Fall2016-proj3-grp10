@@ -1,5 +1,5 @@
 # Project: Labradoodle or Fried Chicken? 
-![image](https://s-media-cache-ak0.pinimg.com/236x/6b/01/3c/6b013cd759c69d17ffd1b67b3c1fbbbf.jpg)
+![image](https://github.com/TZstatsADS/Fall2016-proj3-grp10/blob/master/figs/Capture.JPG)
 ### [Full Project Description](doc/project3_desc.html)
 
 Term: Fall 2016
