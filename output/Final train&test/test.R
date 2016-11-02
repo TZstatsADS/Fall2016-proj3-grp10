@@ -6,20 +6,22 @@ library(data.table)
 
 #model & data#
 Sift_test<-readRDS("Sift_test.RData")
+#Sift_test<-read.csv("Sift_test.csv")
 fit_gb<-readRDS("fit_gb.RData")
 model<-readRDS("model.RData")
 fit_ada<-readRDS("fit_ada.RData")
 clf<-readRDS("clf.RData")
 model1<-readRDS("model1.RData")
 #GBM#
-y_hat_gbm<-predict(fit_gb,newdata=data.frame(Sift_test[,c(1:5033)]))
+y_hat_gbm<-predict(fit_gb,newdata=data.frame(Sift_test))
 for(i in 1:length(y_hat_gbm))
 {if(y_hat_gbm[i]>=0)
 {y_hat_gbm[i]=1}
  else{y_hat_gbm[i]=0}}
 
 #deep learning: tanh#
-test_h2o<-as.h2o(data.frame(Sift_test[,-5034]))
+localH2O = h2o.init(ip = "localhost", port = 54321, startH2O = TRUE)
+test_h2o<-as.h2o(data.frame(Sift_test))
 h2o_yhat_test <- h2o.predict(model, test_h2o)
 y_hat_dl <- as.data.frame(h2o_yhat_test)
 y_hat_dl<-y_hat_dl[,1]
@@ -29,14 +31,14 @@ for(i in 1:length(y_hat_dl))
   else{y_hat_dl[i]=0}}
 
 #Adaboost#
-y_hat_ada<-predict(fit_ada,newdata=data.frame(Sift_test[,c(1:5033)]))
+y_hat_ada<-predict(fit_ada,newdata=data.frame(Sift_test))
 for(i in 1:length(y_hat_ada))
 {if(y_hat_ada[i]>=0)
 {y_hat_ada[i]=1}
   else{y_hat_ada[i]=0}}
 
 #Xgboost#
-test_relevance <- predict(clf,Sift_test[,1:(dim(Sift_test)[2]-1)],
+test_relevance <- predict(clf,Sift_test,
                             ntreelimit =clf$bestInd, missing=NA)
 p <- ifelse(test_relevance>0.5,1,0)
 
