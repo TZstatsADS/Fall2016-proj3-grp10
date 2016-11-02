@@ -41,27 +41,28 @@ X_test <- subset(sift[t_x,],select = -class)
 Y_train <- sift$class[-t_x]
 Y_test <- sift$class[t_x]
 
-#svm_poly...accuracy rate 47.667%
+#svm_poly...accuracy rate 50.3% 47.667%, 42,667%
 model_svm_poly <- svm(class~., data = X_dataset,method = "C-classification", kernel = "polynomial", cost = 0.1, gamma = 0.1)
 pred_svm_poly <- predict(model_svm_poly, X_test)
+table(pred_svm_poly,Y_test)
 sum(pred_svm_poly==Y_test)/length(Y_test)
 
-#svm_line...accuracy rate 68%
+#svm_line...accuracy rate 68.667% 68% 70%
 model_svm_line <- svm(class~., data = X_dataset,method = "C-classification", kernel = "linear", cost = 0.1, gamma = 0.1)
 pred_svm_line <- predict(model_svm_line, X_test)
 sum(pred_svm_line==Y_test)/length(Y_test)
 
-#kernlab_poly...accuracy rate 68%
+#kernlab_poly...accuracy rate 68.667% 68%
 model_kern_poly <- ksvm(class~., data = X_dataset,type = "C-svc",kernel = "polydot")
 pred_kern_poly <- predict(model_kern_poly, X_test)
 sum(pred_kern_poly==Y_test)/length(Y_test)
 
-#kernlab_poly...accuracy rate 68%
+#kernlab_poly...accuracy rate 68.667% 68%
 model_kern_line <- ksvm(class~., data = X_dataset,type = "C-svc",kernel = "vanilladot")
 pred_kern_line <- predict(model_kern_line, X_test)
 sum(pred_kern_line==Y_test)/length(Y_test)
 
-#tree...accuracy rate 61.3%
+#tree...accuracy rate 58% 61.3%
 model_tree <- ctree(class ~ ., data = X_dataset)
 pred_tree <- predict(model_tree,X_test)
 sum(pred_tree==Y_test)/length(Y_test)
@@ -71,8 +72,9 @@ model_gml <- glm(formula = class~. ,family = binomial(link = "logit"),data = X_d
 #pred_gml <- predict(model_gml,X_test)
 #sum(pred_gml==Y_test)/length(Y_test)
 
-#adaboost 74%
+#adaboost 74% 71% 74%
 model_adaboost <- boosting(formula = class~.,data= X_dataset , boos=TRUE)
+save(model_adaboost, file = "model_adaboost.Rdata")
 pred_adaboost <- predict(model_adaboost,X_test)
 sum(pred_adaboost$class==Y_test)/length(Y_test)
 
