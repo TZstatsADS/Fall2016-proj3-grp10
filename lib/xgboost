@@ -1,0 +1,44 @@
+library(xgboost)
+sift_naive <- fread("SIFT - Color - Texture.csv")
+sift_naive <- data.frame(t(sift_naive)[-1,]) 
+colnames(sift_naive) <- paste("feature",c(1:dim(sift_naive)[2]))
+sift_naive$class <- ifelse(grepl("chicken",rownames(sift_naive)),1,0)
+sift_naive <- sift_naive[sample(1:2000),]
+train_naive <- sift_naive[1:round(nrow(sift_naive)*0.8),] 
+test_naive <- sift_naive[1601:2000,]
+
+
+
+h<-sample(nrow(train_naive),200)
+dval<-xgb.DMatrix(data=as.matrix(sapply(train_naive[h,1:(dim(sift_naive)[2]-1)], as.numeric)),
+                  label=train_naive[h,dim(sift_naive)[2]], missing=NA)
+dtrain<-xgb.DMatrix(data=as.matrix(sapply(train_naive[-h,1:(dim(sift_naive)[2]-1)], as.numeric)),
+                    label=train_naive[-h,dim(sift_naive)[2]], missing=NA)
+watchlist<-list(val=dval,train=dtrain)
+param <- list(  objective           = "binary:logistic", 
+                booster             = "gbtree",
+                eta                 = 0.025, 
+                max_depth           = 6, 
+                subsample           = 0.7, 
+                colsample_bytree    = 0.9, 
+                # eval_metric         = "rmse",
+                metrics={'error'},
+                min_child_weight    = 6
+)
+
+clf <- xgb.train(data = dtrain, 
+                 params               = param, 
+                 nrounds              = 1000, #300
+                 verbose              = 1,#2
+                 watchlist            = watchlist,
+                 early.stop.round     = 50, 
+                 maximize            = FALSE,
+                 print.every.n        = 1
+)
+clf$bestScore
+cat("Submit file\n")
+test_relevance <- predict(clf,as.matrix(sapply(test_naive[,1:(dim(sift_naive)[2]-1)], as.numeric)),
+                          ntreelimit =clf$bestInd, missing=NA)
+p <- ifelse(test_relevance>0.5,1,0)
+acu_xgboost <- sum(p==test_naive[,dim(sift_naive)[2]])/length(p)
+acu_xgboost
