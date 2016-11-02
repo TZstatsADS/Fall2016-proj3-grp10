@@ -18,14 +18,17 @@ sift2 <- sift
 
 #use this to refresh the data
 sift <- sift2
-sift <- sift[-1,] #remove first column
-sift <- as.matrix(sift)
-sift<-t(sift)
-sift <- na.omit(sift)
 colnames(sift) <- paste("feature",c(1:ncol(sift)))
+sift <- subset(sift,select = -`feature 1`)
+colnames(sift) <- paste("feature",c(1:ncol(sift)))
+sift<-t(sift)
+# sift <- as.matrix(sift)
+# sift <- sift[,-1]
+# sift <- t(sift)
+# sift <- na.omit(sift)
 sift <- as.data.frame(sift)
+
 #sift$class <- ifelse(grepl("chicken",rownames(sift)),1,0)
-#sift$class <- factor(sift$class,labels = c("chicken","dog"))
 a.vector <- rep(1,1000)
 a.vector <- c(a.vector,rep(0,1000))
 sift$class<- a.vector
@@ -92,13 +95,13 @@ sum(pred_tree==Y_test)/length(Y_test)
 
 
 
-
- # # #adaboost 74% 71% 74% ... with color 84% ... with texture 
- #  model_adaboost_color_texture <- boosting(formula = class~.,data= X_dataset , boos=TRUE)
- #  save(model_adaboost_color_texture, file = "model_adaboost_color_texture.Rdata")
- #  pred_adaboost <- predict(model_adaboost_color_texture,X_test)
- #  sum(pred_adaboost$class==Y_test)/length(Y_test)
- # 
+sift$class <- factor(sift$class,labels = c("chicken","dog"))
+#adaboost 74% 71% 74% ... with color 84% ... with texture 
+model_adaboost_color_texture <- boosting(formula = class~., data= X_dataset, boos=TRUE,mfinal=100)
+save(model_adaboost_color_texture, file = "model_adaboost_color_texture.Rdata")
+pred_adaboost <- predict(model_adaboost_color_texture,X_test)
+sum(pred_adaboost$class==Y_test)/length(Y_test)
+ 
 # model_adaboost$importance
 # error_adaboost <- errorevol(model_adaboost,X_test_dataset)
 # x<-c(1:100)
