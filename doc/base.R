@@ -10,18 +10,22 @@ library("party")
 library("h2o")
 library("adabag")
 library("plotly")
+library("gbm")
 
-sift <- fread("./Fall2016-proj3-grp10-master/data/sift_features.csv")
+sift <- fread("./Fall2016-proj3-grp10-master/data/sift_color_texture.csv")
 sift2 <- sift
 
 #use this to refresh the data
 sift <- sift2
 sift <- as.matrix(sift)
+sift <- sift[5001:5035,]
+sift <- na.omit(sift)
 sift <- t(sift)
-colnames(sift) <- paste("feature",c(1:5000))
+colnames(sift) <- paste("feature",c(1:ncol(sift)))
 sift <- data.frame(sift)
 sift$class <- ifelse(grepl("chicken",rownames(sift)),1,0)
-sift$class <- factor(sift$class,labels = c("chicken","dog"))
+#sift$class <- factor(sift$class,labels = c("chicken","dog"))
+
 
 this <- colSums(subset(sift,select = -class))
 while(min(this) < 0.0001){
@@ -32,6 +36,7 @@ while(min(this) < 0.0001){
   this <- this[-that]
 }
 
+
 #dividing training and test sample
 t_x <- sample(nrow(sift),nrow(sift)*0.15)
 X_dataset <- sift[-t_x,]
@@ -41,41 +46,52 @@ X_test <- subset(sift[t_x,],select = -class)
 Y_train <- sift$class[-t_x]
 Y_test <- sift$class[t_x]
 
-#svm_poly...accuracy rate 50.3% 47.667%, 42,667%
-model_svm_poly <- svm(class~., data = X_dataset,method = "C-classification", kernel = "polynomial", cost = 0.1, gamma = 0.1)
-pred_svm_poly <- predict(model_svm_poly, X_test)
-table(pred_svm_poly,Y_test)
-sum(pred_svm_poly==Y_test)/length(Y_test)
 
-#svm_line...accuracy rate 68.667% 68% 70%
-model_svm_line <- svm(class~., data = X_dataset,method = "C-classification", kernel = "linear", cost = 0.1, gamma = 0.1)
-pred_svm_line <- predict(model_svm_line, X_test)
-sum(pred_svm_line==Y_test)/length(Y_test)
+fit.gbm1 <- gbm(class ~ ., data=X_dataset, dist="adaboost", n.tree = 400,shrinkage = 1)
 
-#kernlab_poly...accuracy rate 68.667% 68%
-model_kern_poly <- ksvm(class~., data = X_dataset,type = "C-svc",kernel = "polydot")
-pred_kern_poly <- predict(model_kern_poly, X_test)
-sum(pred_kern_poly==Y_test)/length(Y_test)
 
-#kernlab_poly...accuracy rate 68.667% 68%
-model_kern_line <- ksvm(class~., data = X_dataset,type = "C-svc",kernel = "vanilladot")
-pred_kern_line <- predict(model_kern_line, X_test)
-sum(pred_kern_line==Y_test)/length(Y_test)
+pred_gbm <- predict(fit.gbm1, X_test,n.tree=10)
+for(i in 1:length(pred_gbm)){
+  if(pred_gbm[i] < 0){
+    pred_gbm[i] = 0
+  }
+  if(pred_gbm[i] > 0){
+     pred_gbm[i] = 1
+  }
+}
+table(pred_gbm,Y_test)
+sum(pred_gbm==Y_test)/length(Y_test)
 
-#tree...accuracy rate 58% 61.3%
-model_tree <- ctree(class ~ ., data = X_dataset)
-pred_tree <- predict(model_tree,X_test)
-sum(pred_tree==Y_test)/length(Y_test)
+# #svm_poly...accuracy rate 50.3% 47.667%, 42,667%
+# model_svm_poly <- svm(class~., data = X_dataset,method = "C-classification", kernel = "polynomial", cost = 0.1, gamma = 0.1)
+# pred_svm_poly <- predict(model_svm_poly, X_test)
+# table(pred_svm_poly,Y_test)
+# sum(pred_svm_poly==Y_test)/length(Y_test)
+# 
+# #svm_line...accuracy rate 68.667% 68% 70%
+# model_svm_line <- svm(class~., data = X_dataset,method = "C-classification", kernel = "linear", cost = 0.1, gamma = 0.1)
+# pred_svm_line <- predict(model_svm_line, X_test)
+# sum(pred_svm_line==Y_test)/length(Y_test)
+# 
+# #kernlab_poly...accuracy rate 68.667% 68%
+# model_kern_poly <- ksvm(class~., data = X_dataset,type = "C-svc",kernel = "polydot")
+# pred_kern_poly <- predict(model_kern_poly, X_test)
+# sum(pred_kern_poly==Y_test)/length(Y_test)
+# 
+# #kernlab_poly...accuracy rate 68.667% 68%
+# model_kern_line <- ksvm(class~., data = X_dataset,type = "C-svc",kernel = "vanilladot")
+# pred_kern_line <- predict(model_kern_line, X_test)
+# sum(pred_kern_line==Y_test)/length(Y_test)
+# 
+# #tree...accuracy rate 58% 61.3% ... with color 74% ... with texture 75%
+# model_tree <- ctree(class ~ ., data = X_dataset)
+# pred_tree <- predict(model_tree,X_test)
+# sum(pred_tree==Y_test)/length(Y_test)
 
-#glm...does not converge
-model_gml <- glm(formula = class~. ,family = binomial(link = "logit"),data = X_dataset)
-#pred_gml <- predict(model_gml,X_test)
-#sum(pred_gml==Y_test)/length(Y_test)
-
-#adaboost 74% 71% 74%
-model_adaboost <- boosting(formula = class~.,data= X_dataset , boos=TRUE)
-save(model_adaboost, file = "model_adaboost.Rdata")
-pred_adaboost <- predict(model_adaboost,X_test)
+#adaboost 74% 71% 74% ... with color 84% ... with texture 
+model_adaboost_color_texture <- boosting(formula = class~.,data= X_dataset , boos=TRUE)
+wasave(model_adaboost_color_texture, file = "model_adaboost_color_texture.Rdata")
+pred_adaboost <- predict(model_adaboost_color_texture,X_test)
 sum(pred_adaboost$class==Y_test)/length(Y_test)
 
 model_adaboost$importance
@@ -86,28 +102,4 @@ ada_table <- t(ada_table)
 ada_table <- as.data.frame(ada_table)
 colnames(ada_table) <- c("iteration","error_rate")
 plot(x=ada_table$iteration,y=ada_table$error_rate)
-
-
-
-
-
-
-#####THIS SECTION IS NOT YET COMPLETED
-#deep learning h2o
-localH2O <- h2o.init(ip = "localhost", port = 50002)#does not work for me
-sift.h2o <- as.h2o(localH2O, sift.r, key="iris.h2o")
-
-#convert this line: sift.hex = h2o.importFile(localH2O, path = prosPath, key = "sift.hex")
-s <- h2o.runif(sift.hex)
-summary(s)
-
-sift.train = sift.hex[s <= 0.8,]
-sift.train = h2o.assign(sift.train, "sift.train")
-sift.test = sift.hex[s > 0.8,]
-sift.test = h2o.assign(sift.test, "sift.test")
-nrow(sift.train) + nrow(sift.test)
-
-h2o.gbm(y = dependent, x = independent, data = australia.hex, n.trees
-        = 15, interaction.depth = 5,
-        n.minobsinnode = 2, shrinkage = 0.01, distribution= "multinomial")
 
