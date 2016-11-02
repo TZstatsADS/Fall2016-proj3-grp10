@@ -95,5 +95,5 @@ output=output[-c(10,11),]
 write.csv(output,file="Final - Feature - 2.csv")
 sift.feature=read.csv(file="sift_features.csv")
 sift.feature=rbind(as.matrix(sift.feature),as.matrix(output))
-write.csv(sift.feature,file="Final - SIFT & OTHERS.csv")
+write.csv(sift.feature,file="Final_SIFT.csv")
 
