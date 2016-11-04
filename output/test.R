@@ -5,14 +5,15 @@ library(xgboost)
 library(data.table)
 
 #model & data#
-Sift_test<-readRDS("Sift_test.RData")
-#Sift_test<-read.csv("Sift_test.csv")
+Sift_test<-read.csv("final.csv")
+Sift_test<-na.omit(Sift_test[,-1])
+Sift_test<-t(Sift_test)
 fit_gb<-readRDS("fit_gb.RData")
 model<-readRDS("model.RData")
 fit_ada<-readRDS("fit_ada.RData")
 clf<-readRDS("clf.RData")
 model1<-readRDS("model1.RData")
-#GBM#
+#GBM:baseline model#
 y_hat_gbm<-predict(fit_gb,newdata=data.frame(Sift_test))
 for(i in 1:length(y_hat_gbm))
 {if(y_hat_gbm[i]>=0)
@@ -20,7 +21,6 @@ for(i in 1:length(y_hat_gbm))
  else{y_hat_gbm[i]=0}}
 
 #deep learning: tanh#
-localH2O = h2o.init(ip = "localhost", port = 54321, startH2O = TRUE)
 test_h2o<-as.h2o(data.frame(Sift_test))
 h2o_yhat_test <- h2o.predict(model, test_h2o)
 y_hat_dl <- as.data.frame(h2o_yhat_test)
@@ -59,5 +59,5 @@ for(i in 1:length(m_v))
 { m_v[i]=1}
   else{m_v[i]=0}}
 
-saveRDS(m_v,"testresult.RData")
+saveRDS(data.frame(m_v,y_hat_gbm),"testresult.RData")
                         
